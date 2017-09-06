@@ -13,7 +13,7 @@
 # Any application that you put in your ~/ShinyApps directory is automatically hosted.
 # The directory must be on helix or ctshiny01.
 # The URL will be in the format  http://ctshiny01:3838/[YOUR USERNAME]/[APP NAME]
-# http://ctshiny01:3838/ytakemon/Shiny_Col4a5xDO
+# http://ctshiny01:3838/ytakemon/
 
 # RESOURCES:
 # layout guide: https://shiny.rstudio.com/articles/layout-guide.html
