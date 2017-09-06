@@ -20,7 +20,13 @@ ui <- fluidPage(
       # Confirmation text
       fluidRow(column(verbatimTextOutput("value"), width = 12)),
       # Dowload eQTl map
-      downloadButton("download_image", label = "Download")
+      downloadButton("download_image", label = "Download"),
+
+      br(),
+      br(),
+      div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by Yuka Takemon ",
+          "souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
+          " (JAX network only).")
     ),
 
     # Main panel for displaying outputs ------------------
