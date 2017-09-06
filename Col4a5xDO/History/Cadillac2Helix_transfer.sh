@@ -46,3 +46,6 @@ cd /hpcdata/ytakemon/Col4a5xDO/
 scp -r Phenotype ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO
 scp -r resources ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO
 scp -r Sample_list ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO
+
+# Need to copy into shinyapp directly
+cp /projects/ytakemon/Col4a5xDO/best.compiled.genoprob/plot/RNA_qtl/Complete_eQTL_plots/* /home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/
