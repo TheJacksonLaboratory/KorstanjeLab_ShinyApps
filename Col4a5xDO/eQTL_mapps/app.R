@@ -1,43 +1,41 @@
+library(shiny)
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
-  titlePanel("X-linked Alport Diversity Outbred mouse model – eQTL maps"),
+  titlePanel("Col4a5 x Diversity Outbred – eQTL maps"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
     # Sidebar panel for inputs ------------------
     sidebarPanel(
-      textInput("Text", label = h3("Gene Query"), value = "Enter gene name or Ensembl ID"),
-      fluidRow(column(3, verbatimTextOutput("value")))
+        textInput(inputId = "gene_input", label = "Gene Query", value = "Enter gene here", width = "100%"),
+        fluidRow(column(verbatimTextOutput("value"), width = 12))
+        #fluidRow(column(widtextOutput("path_input")))
     ),
     # Main panel for displaying outputs ------------------
-    mainPanel(
-      imageOutput("eQTL_map")
+    mainPanel( "main panel",
+    img(src = "ENSMUSG00000020774.Aspa.eQTL.perm1000.pdf")
     )
   )
 )
-
 # Server ----------------------------------------------------------------------
 server <- function(input, output) {
-  output$value <- renderPrint({input$Text})
+  # Display query gene in below text entry box
+  output$value <- renderText({input$gene_input})
 
-  image_path <-
-
+  # Render image
+  path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
+  file <- list.files(path = path, pattern = "Aspa")
+  output$image <- renderText({
+    file
+    })
+  #output$image <- renderImage({
+    #Find image
+    #path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
+    #file <- list.files(path = path, pattern = "Aspa")
+    #filename <- paste0(path,file)
+    #list(src = "minion.jpeg")
+    #}, deleteFile = FALSE)
 }
 
 # Run the app -----------------------------------------------------------------
 shinyApp(ui = ui, server = server)
-
-
-Lrrc74a.eQT
-
-
-
-
-
-
-
-
-
-setwd("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/plot/RNA_qtl/Complete_eQTL_plots")
-x <- list.files("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/plot/RNA_qtl/Complete_eQTL_plots")
-x[grep(paste0(".", "Lrrc74a", "."), x)]
