@@ -1,4 +1,6 @@
 library(shiny)
+# All eQTL maps are located in helix @ /home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/
+
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
   titlePanel("Col4a5 x Diversity Outbred – eQTL maps"),
@@ -7,13 +9,16 @@ ui <- fluidPage(
   sidebarLayout(
     # Sidebar panel for inputs ------------------
     sidebarPanel(
-        textInput(inputId = "gene_input", label = "Gene Query", value = "Enter gene here", width = "100%"),
+        p(span("Please use safari to view eQTL maps!", style = "color:blue")),
+        p("Both Ensembl ID and gene names can be queried."),
+        br(),
+        textInput(inputId = "gene_input", label = "Gene Query", value = "Enter query here", width = "100%"),
         fluidRow(column(verbatimTextOutput("value"), width = 12))
         #fluidRow(column(widtextOutput("path_input")))
     ),
     # Main panel for displaying outputs ------------------
-    mainPanel( "main panel",
-    img(src = "ENSMUSG00000020774.Aspa.eQTL.perm1000.pdf")
+    mainPanel(
+    imageOutput("image")
     )
   )
 )
@@ -23,18 +28,13 @@ server <- function(input, output) {
   output$value <- renderText({input$gene_input})
 
   # Render image
-  path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-  file <- list.files(path = path, pattern = "Aspa")
-  output$image <- renderText({
-    file
-    })
-  #output$image <- renderImage({
-    #Find image
-    #path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-    #file <- list.files(path = path, pattern = "Aspa")
-    #filename <- paste0(path,file)
-    #list(src = "minion.jpeg")
-    #}, deleteFile = FALSE)
+  output$image <- renderImage({
+    # Find image
+    path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
+    file <- list.files(path = path, pattern = input$gene_input)
+    filename <- paste0(path,file)
+    list(src = filename)
+    }, deleteFile = FALSE)
 }
 
 # Run the app -----------------------------------------------------------------
