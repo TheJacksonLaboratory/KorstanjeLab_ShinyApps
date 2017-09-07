@@ -40,6 +40,12 @@ scp -r perm1000 ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO/best.compile
 scp -r plot ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/
 # move qtl objects
 scp -r qtl ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/
+# move Gene allele
+scp -r Gene_allele.Rdata ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/
+# move RNA seq data directory
+scp -r RNA_seq_Rdata ytakemon@helix.jax.org:/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/
+
+
 
 # Other data and resouces used
 cd /hpcdata/ytakemon/Col4a5xDO/
