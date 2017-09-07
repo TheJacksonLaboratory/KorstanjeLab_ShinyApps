@@ -45,7 +45,7 @@ server <- function(input, output) {
   output$image <- renderImage({
   # Find image
   path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-  file <- list.files(path = path, pattern = input$gene_input)
+  file <- list.files(path = path, pattern = paste0(".",input$gene_input,"."))
   file_path <- paste0(path,file)
   list(src = file_path)
   }, deleteFile = FALSE)
