@@ -5,20 +5,22 @@ library(shiny)
 ui <- fluidPage(
 
   # Title
-  titlePanel("Col4a5 x Diversity Outbred – eQTL maps"),
+  titlePanel("Col4a5 x Diversity Outbred – phenotype QTL maps"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
     # Sidebar panel for inputs ------------------
     sidebarPanel(
       # Header
-      p(span("Please use safari to view eQTL maps!", style = "color:blue")),
-      p("Both Ensembl ID and gene names can be queried."),
+      p(span("Please use safari to view phenoQTL maps!", style = "color:blue")),
       br(),
-      # Input text box
-      textInput(inputId = "gene_input", label = "Gene Query", value = "Enter query here", width = "100%"),
-      # Confirmation text
-      fluidRow(column(verbatimTextOutput("value"), width = 12)),
+      # Dropdown menu
+      selectInput(inputId = "pheno",
+                  label = "Select Phenotype",
+                  choices = c("Glomerular filtration rate",
+                              "Albumin normalized to creatinine at 6 weeks",
+                              "Albumin normalized to creatinine at 10 weeks",
+                              "Albumin normalized to creatinine at 15 weeks")),
       # Dowload eQTl map
       downloadButton("download_image", label = "Download"),
 
@@ -38,25 +40,41 @@ ui <- fluidPage(
 # Server ----------------------------------------------------------------------
 server <- function(input, output) {
 
-  # Display query gene in below text entry box -----------------------
-  output$value <- renderText({input$gene_input})
-
   # Render image -----------------------------
   output$image <- renderImage({
-  # Find image
-  path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-  file <- list.files(path = path, pattern = input$gene_input)
-  file_path <- paste0(path,file)
-  list(src = file_path)
+    # Find image
+    path <- "/home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/"
+    # Based on input drop down choices
+    if (input$pheno == "Glomerular filtration rate"){
+      file <- "Figure4.1_qtl.log.C2.GFR.noX.pdf"
+    } else if (input$pheno == "Albumin normalized to creatinine at 6 weeks"){
+      file <- "Figure4.2_qtl.log.Alb6wk.noX.pdf"
+    } else if (input$pheno == "Albumin normalized to creatinine at 10 weeks"){
+      file <- "Figure4.3_qtl.log.Alb10wk.noX.pdf"
+    } else if (input$pheno == "Albumin normalized to creatinine at 15 weeks"){
+      file <- "Figure4.4_qtl.log.Alb15wk.noX.pdf"
+    }
+    # Define absolute path and list source
+    file_path <- paste0(path, file)
+    list(src = file_path)
   }, deleteFile = FALSE)
 
   # Download handler --------------------------
   output$download_image <- downloadHandler(
-    filename <- paste0(input$gene_input, "_eQTL_map.pdf"),
+    filename <- paste0(input$pheno, "_QTL_map.pdf"),
     content <- function(downloadFile) {
-      path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-      file <- list.files(path = path, pattern = input$gene_input)
-      file_path <- paste0(path,file)
+      path <- "/home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/"
+      # Based on input drop down choices
+      if (input$pheno == "Glomerular filtration rate"){
+        file <- "Figure4.1_qtl.log.C2.GFR.noX.pdf"
+      } else if (input$pheno == "Albumin normalized to creatinine at 6 weeks"){
+        file <- "Figure4.2_qtl.log.Alb6wk.noX.pdf"
+      } else if (input$pheno == "Albumin normalized to creatinine at 10 weeks"){
+        file <- "Figure4.3_qtl.log.Alb10wk.noX.pdf"
+      } else if (input$pheno == "Albumin normalized to creatinine at 15 weeks"){
+        file <- "Figure4.4_qtl.log.Alb15wk.noX.pdf"
+      }
+      file_path <- paste0(path, file)
       file.copy(file_path, downloadFile)
     }
   )
