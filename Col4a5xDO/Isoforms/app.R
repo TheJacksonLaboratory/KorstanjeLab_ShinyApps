@@ -26,12 +26,30 @@ ui <- fluidPage(
       #p("Both Ensembl ID and gene names can be queried."),
       #br(),
       # Input text box
-      textInput(inputId = "gene_input", label = "Gene Query", value = "Enter query here", width = "100%"),
+      textInput(inputId = "gene_input",
+                label = "Gene Query",
+                value = "Enter query here",
+                width = "100%"),
       # Confirmation text
-      fluidRow(column(verbatimTextOutput("value"), width = 12)),
+      fluidRow(column(verbatimTextOutput("value"),
+               width = 12)),
+      # Slider Input for bin width
+      sliderInput(inputId = "binwidth",
+                  label = "Adjust bin width:",
+                  min = 0,
+                  max = 1,
+                  value = 0.02,
+                  step = 0.02),
+      # Slider input for dot size
+      sliderInput(inputId = "dotsize",
+                  label = "Adjust dot size:",
+                  min = 0,
+                  max = 10,
+                  value = 0.2,
+                  step = 0.2),
       # Dowload eQTl map
-      downloadButton("download_plot", label = "Download"),
-
+      downloadButton("download_plot",
+                     label = "Download"),
       br(),
       br(),
       div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
@@ -55,6 +73,8 @@ server <- function(input, output) {
   # Create plot function ------------------------------------------
   isoform_plot <- function(){
     gene <- input$gene_input
+    binwidth <- input$binwidth
+    dotsize <- input$dotsize
     mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
     																"chromosome_name", "start_position", "end_position"),
                                     filters = "mgi_symbol",
@@ -75,7 +95,7 @@ server <- function(input, output) {
     if (is.na(names(gg_data)[2])){
       gg_data$Transcript <- transcript_list
       ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Transcript)) +
-      	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 0.02) +
+      	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
       	scale_x_discrete(paste0(gene, " Transcripts")) +
       	scale_y_continuous("TPM Counts") +
         guides(fill = FALSE)+
@@ -84,7 +104,7 @@ server <- function(input, output) {
     } else {
     names(gg_data)[2] <- "Transcripts"
     ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Transcripts)) +
-    	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 0.02) +
+    	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
     	scale_x_discrete(paste0(gene, " Transcripts")) +
     	scale_y_continuous("TPM Counts") +
       guides(fill = FALSE)+
@@ -105,7 +125,7 @@ server <- function(input, output) {
       },
     # content must be a function with arguemtn files to write plot
     content <- function(file) {
-      pdf(file) #open device
+      pdf(file, width = 11, height = 7) #open device
         print(isoform_plot()) #print plot
       dev.off() # close device
     }
