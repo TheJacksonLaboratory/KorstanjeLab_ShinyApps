@@ -23,8 +23,8 @@ ui <- fluidPage(
     sidebarPanel(
       # Header
       #p(span("Please use safari to view eQTL maps!", style = "color:blue")),
-      #p("Both Ensembl ID and gene names can be queried."),
-      #br(),
+      p("Both Ensembl ID and gene names can be queried."),
+      br(),
       # Input text box
       textInput(inputId = "gene_input",
                 label = "Gene Query",
@@ -75,11 +75,21 @@ server <- function(input, output) {
     gene <- input$gene_input
     binwidth <- input$binwidth
     dotsize <- input$dotsize
-    mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
-    																"chromosome_name", "start_position", "end_position"),
-                                    filters = "mgi_symbol",
-                                    values = gene,
-    																mart = ensembl)
+
+    # Figure out if gene symbol or ENSEMBL ID
+    if ( substr(gene, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "ensembl_gene_id",
+                                      values = gene,
+      																mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "mgi_symbol",
+                                      values = gene,
+      																mart = ensembl)
+    }
     # Extract transcript list for input gene
     transcript_list <- mart_extract$ensembl_transcript_id
     gene_id <- mart_extract$ensembl_gene_id[1]
