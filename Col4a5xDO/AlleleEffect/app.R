@@ -1,12 +1,15 @@
 library(shiny)
 library(biomaRt)
 library(ggplot2)
+library(DOQTL)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
-Gene_allele <- as.data.frame(Gene_allele)
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
+load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/genoprobs/best.genoprobs.192.Rdata")
+load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/GM_snps.Rdata")
+pheno <- read.delim("/projects/ytakemon/Col4a5xDO/Phenotype/Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
+
+
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -15,16 +18,22 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  titlePanel("Col4a5 x Diversity Outbred – Isoform query"),
+  titlePanel("Col4a5 x Diversity Outbred – Allele Effect"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
     # Sidebar panel for inputs ------------------
     sidebarPanel(
       # Header
-      #p(span("Please use safari to view eQTL maps!", style = "color:blue")),
-      #p("Both Ensembl ID and gene names can be queried."),
-      #br(),
+      p("Both Ensembl ID and gene names can be queried."),
+      br(),
+      # Select Phenotype
+      selectInput(inputId = "pheno",
+                  label = "Select Phenotype",
+                  choices = c("Glomerular filtration rate",
+                              "ACR at 6 weeks",
+                              "ACR at 10 weeks",
+                              "ACR at 15 weeks")),
       # Input text box
       textInput(inputId = "gene_input",
                 label = "Gene Query",
@@ -33,26 +42,12 @@ ui <- fluidPage(
       # Confirmation text
       fluidRow(column(verbatimTextOutput("value"),
                width = 12)),
-      # Slider Input for bin width
-      sliderInput(inputId = "binwidth",
-                  label = "Adjust bin width:",
-                  min = 0,
-                  max = 1,
-                  value = 0.02,
-                  step = 0.02),
-      # Slider input for dot size
-      sliderInput(inputId = "dotsize",
-                  label = "Adjust dot size:",
-                  min = 0,
-                  max = 10,
-                  value = 0.2,
-                  step = 0.2),
       # Dowload eQTl map
       downloadButton("download_plot",
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
+      div("Col4a5xDO Allele Effect v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
           "souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
     ),
@@ -72,25 +67,102 @@ server <- function(input, output) {
 
   # Create plot function ------------------------------------------
   isoform_plot <- function(){
-    gene <- input$gene_input
-    binwidth <- input$binwidth
-    dotsize <- input$dotsize
-    mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
-    																"chromosome_name", "start_position", "end_position"),
-                                    filters = "mgi_symbol",
-                                    values = gene,
-    																mart = ensembl)
-    # Extract transcript list for input gene
-    transcript_list <- mart_extract$ensembl_transcript_id
-    gene_id <- mart_extract$ensembl_gene_id[1]
+    gene_select <- input$gene_input
+    pheno_select <- input$pheno
 
-    #Create new dataframe with only TPM from list of transcirpts
-    transcript_list <- colnames(All_transcript_tpm)[colnames(All_transcript_tpm) %in% transcript_list]
-    TPM <- All_transcript_tpm[,transcript_list]
+    #Select phenotype and load qtl file
+    qtl_dir <- "/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/qtl/"
+    if (pheno_select == "Glomerular filtration rate"){
+      file <- "qtl.GFR.log.C2.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.GFR.log.C2.192
+    } else if (pheno_select == "ACR at 6 weeks"){
+      file <- "qtl.log.ACR6WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.log.ACR6WK.192
+    } else if (pheno_select == "ACR at 10 weeks"){
+      file <- "qtl.log.ACR10WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl  <- qtl.log.ACR10WK.192
+    } else if (pheno_select == "ACR at 15 weeks"){
+      file <- "qtl.log.ACR15WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.log.ACR15WK.192
+    }
 
-    #plot non-transformed TPM
-    gg_data <- melt(TPM, id.vars = transcript_list,
-    	value.name = "TPM")
+    # Figure out if gene input is gene symbol or ENSEMBL_ID
+    if ( substr(gene_select, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_name",
+                                           "start_position", "end_position"),
+                            filters = "ensembl_gene_id",
+                            values = gene_select,
+      											mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_name",
+                                           "start_position", "end_position"),
+                            filters = "mgi_symbol",
+                            values = gene_select,
+      											mart = ensembl)
+    }
+    # Gather chr, start, end information
+    chr <- mart_extract$chromosome_name
+    start <- (mart_extract$start_position / (1e6))
+    end <- (mart_extract$end_position / (1e6))
+
+    # Find marker in QTL object
+    qtl <- qtl$lod$A
+    qtl <- qtl[qtl$chr == chr,]
+    qtl <- qtl[qtl$pos >= start,]
+    qtl <- qtl[qtl$pos <= end,]
+    target <- qtl[qtl$lod == max(qtl$lod),]
+
+    # Check to see if target was found
+    if (nrow(target) == 0){
+      stop("Cannot query! No marker found in query gene region.")
+    }
+
+    #calculate coef at target marker depending on the pheno_select variable
+    fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     if (is.na(names(gg_data)[2])){
       gg_data$Transcript <- transcript_list
