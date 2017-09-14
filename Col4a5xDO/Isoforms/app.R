@@ -52,7 +52,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
+      div("Col4a5xDO Isoforms v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
           "souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
     ),
