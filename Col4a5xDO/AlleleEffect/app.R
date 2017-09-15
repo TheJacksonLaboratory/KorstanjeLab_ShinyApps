@@ -9,7 +9,6 @@ load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/genoprobs/best.genopro
 load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/GM_snps.Rdata")
 pheno <- read.delim("/projects/ytakemon/Col4a5xDO/Phenotype/Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 
-
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -66,9 +65,9 @@ server <- function(input, output) {
   output$value <- renderText({input$gene_input})
 
   # Create plot function ------------------------------------------
-  isoform_plot <- function(){
-    gene_select <- input$gene_input
-    pheno_select <- input$pheno
+  AlleleEffect_plot <- function(){
+    gene_select <- input$gene_input # gene_select <- "Pik3r1"
+    pheno_select <- input$pheno # pheno_select <- "ACR at 6 weeks"
 
     #Select phenotype and load qtl file
     qtl_dir <- "/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/qtl/"
@@ -118,87 +117,69 @@ server <- function(input, output) {
 
     # Check to see if target was found
     if (nrow(target) == 0){
+      validate(nrow(target) != 0, "Cannot query! No markers found in query gene region")
       stop("Cannot query! No marker found in query gene region.")
     }
 
     #calculate coef at target marker depending on the pheno_select variable
-    fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if (is.na(names(gg_data)[2])){
-      gg_data$Transcript <- transcript_list
-      ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Transcript)) +
-      	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
-      	scale_x_discrete(paste0(gene, " Transcripts")) +
-      	scale_y_continuous("TPM Counts") +
-        guides(fill = FALSE)+
-      	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-      	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 0, vjust = 0.5))
-    } else {
-    names(gg_data)[2] <- "Transcripts"
-    ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Transcripts)) +
-    	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
-    	scale_x_discrete(paste0(gene, " Transcripts")) +
-    	scale_y_continuous("TPM Counts") +
-      guides(fill = FALSE)+
-    	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-    	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 15, vjust = 0.5))
+    if (pheno_select == "Glomerular filtration rate"){
+      fit <- lm(pheno$C3_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+    } else if (pheno_select == "ACR at 6 weeks"){
+      fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+    } else if (pheno_select == "ACR at 10 weeks"){
+      fit <- lm(pheno$ACR10WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+    } else if (pheno_select == "ACR at 15 weeks"){
+      fit <- lm(pheno$ACR15WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
     }
-  }
+
+    #Female averages by strain at Snp marker
+    cfit <- coef(fit)
+    cfit[10] = 0 #set standard (ie strain compared to) to 0
+    cfit <- cfit + cfit[1]  #add female
+    ecfit <- exp(cfit) #exp fixes values back to natural numbers
+    ecfit_F <- as.data.frame(ecfit)
+
+    #Male averages by strain at snp marker
+    cfit <- coef(fit)
+    cfit[10] = 0 #set standard (ie strain compared to) to 0
+    cfit <- cfit + cfit[1] + cfit[2] #add female and male = male (female = female, male = male + female)
+    ecfit <- exp(cfit) #exp fixes balues back to natural numbers
+    ecfit_M <- as.data.frame(ecfit)
+
+    # Combine both sexes
+    data_coef <- ecfit_F
+    data_coef$M <- ecfit_M$ecfit
+    colnames(data_coef) <- c("F","M")
+    names(data_coef) <- c("F","M")
+    data_coef <- data_coef[c(3:10),]
+    rownames(data_coef) <- c("A","B","C","D","E","F","G","H")
+    data_coef$founder <- rownames(data_coef)
+
+    ggdata <- melt(data_coef)
+    colnames(ggdata) <- c("Founder", "Sex", "Value")
+    ggplot(ggdata, aes( x = Founder, y = Value, fill = Sex)) +
+    	geom_bar( stat = "identity", position = "dodge") +
+    	scale_fill_discrete( labels = c("Females","Males")) +
+    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
+    				x = "DO Founders",
+    				y = paste0(pheno_select, " values")) +
+    	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
+    }
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
-    isoform_plot()
+    AlleleEffect_plot()
     })
 
   # Download plot --------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
-      paste0(input$gene_input, "_expressed_isoforms.pdf")
+      paste0(input$gene_input, "_allele_effect.pdf")
       },
     # content must be a function with arguemtn files to write plot
     content <- function(file) {
       pdf(file, width = 11, height = 7) #open device
-        print(isoform_plot()) #print plot
+        print(AlleleEffect_plot()) #print plot
       dev.off() # close device
     }
   )
