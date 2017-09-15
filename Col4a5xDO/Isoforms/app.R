@@ -47,6 +47,10 @@ ui <- fluidPage(
                   max = 10,
                   value = 0.2,
                   step = 0.2),
+      # Add buttons for isoform and isoform by allele
+      actionButton("iso_plot", "Plot isoforms"),
+      actionButton("allele_iso_plot", "Plot isoforms by allele")
+
       # Dowload eQTl map
       downloadButton("download_plot",
                      label = "Download"),
@@ -102,25 +106,67 @@ server <- function(input, output) {
     gg_data <- melt(TPM, id.vars = transcript_list,
     	value.name = "TPM")
 
-    if (is.na(names(gg_data)[2])){
-      gg_data$Transcript <- transcript_list
-      ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Transcript)) +
+
+    # iso_plot
+    observeEvent(input$iso_plot, {
+      if (is.na(names(gg_data)[2])){
+        gg_data$Transcript <- transcript_list
+        ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Transcript)) +
+        	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
+        	scale_x_discrete(paste0(gene, " Transcripts")) +
+        	scale_y_continuous("TPM Counts") +
+          guides(fill = FALSE)+
+        	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
+        	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 0, vjust = 0.5))
+      } else {
+      names(gg_data)[2] <- "Transcripts"
+      ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Transcripts)) +
       	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
       	scale_x_discrete(paste0(gene, " Transcripts")) +
       	scale_y_continuous("TPM Counts") +
         guides(fill = FALSE)+
       	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-      	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 0, vjust = 0.5))
-    } else {
-    names(gg_data)[2] <- "Transcripts"
-    ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Transcripts)) +
-    	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
-    	scale_x_discrete(paste0(gene, " Transcripts")) +
-    	scale_y_continuous("TPM Counts") +
-      guides(fill = FALSE)+
-    	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-    	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 15, vjust = 0.5))
-    }
+      	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 15, vjust = 0.5))
+      }
+    })
+
+    # allele_iso_plot
+    observeEvent(input$allele_iso_plot, {
+
+    })
+
+
+
+
+
+
+
+
+#plot non-transformed tpm by allele
+gg_data <- Fmn1_transcript_tpm
+gg_data <- as.data.frame(gg_data)
+colnames(gg_data) <- Fmn1_names
+gg_data$allele <- Gene_allele$ENSMUSG00000044042
+gg_data <- melt(gg_data)
+colnames(gg_data) <- c("Allele", "Fmn1_transcripts", "Value")
+
+ggplot <- ggplot(gg_data, aes( x = Fmn1_transcripts, y = Value, fill = Allele)) +
+	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 0.2, position = position_dodge(1)) +
+	scale_x_discrete("Fmn1 transcirpts") +
+	scale_y_continuous("transcript tpm") +
+	labs( title = "Comparison of Fmn1 transcirpts tpm by allele") +
+	theme( plot.title = element_text(hjust = 0.5))
+
+pdf("./GBRS_reconstruction/reconstruct/best.compiled.genoprob/plot/Fmn1_transcript_tpm_by_allele.pdf", width = 10.0, height = 7.5)
+print(ggplot)
+dev.off()
+
+
+
+
+
+
+
   }
 
   # Render plot ---------------------------------------
