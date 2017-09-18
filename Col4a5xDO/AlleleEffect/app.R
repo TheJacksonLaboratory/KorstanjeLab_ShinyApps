@@ -123,7 +123,7 @@ server <- function(input, output) {
 
     #calculate coef at target marker depending on the pheno_select variable
     if (pheno_select == "Glomerular filtration rate"){
-      fit <- lm(pheno$C3_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      fit <- lm(pheno$C2_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
     } else if (pheno_select == "ACR at 6 weeks"){
       fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
     } else if (pheno_select == "ACR at 10 weeks"){
