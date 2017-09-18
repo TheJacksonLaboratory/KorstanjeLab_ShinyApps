@@ -5,7 +5,7 @@ library(shiny)
 ui <- fluidPage(
 
   # Title
-  titlePanel("Col4a5 x Diversity Outbred – phenotype QTL maps"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Phenotype QTL"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
