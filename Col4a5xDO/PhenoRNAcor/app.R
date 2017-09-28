@@ -118,9 +118,56 @@ server <- function(input, output) {
     pheno$tpm <- TPM
 
     # Subset pheno data based on selected sexes
-    
+    pheno_sub <- pheno[pheno$Sex %in% sex_select,]
+    # Make sure complete cases for selected phenotype
+    pheno_sub <- pheno_sub[complete.cases(pheno_sub[,pheno_select]),]
+
+    # Calculate equation for subtitle
+    fit <- lm(pheno_sub[,pheno_select] ~ pheno_sub[,"tpm"], data = pheno_sub)
+    fitsum <- summary(fit)
+    intcp <- signif(coef(fit)[1], 3)
+    slope <- signif(coef(fit)[2], 3)
+    pval <- signif(fitsum$coefficients[2,4], 3)
+    r2 <- signif(fitsum$adj.r.squared, 3)
+    eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
+
+# difference between cor and lm,r2
+cor(pheno_sub[,pheno_select], pheno_sub[,"tpm"], method = "pearson")
+###### TOBE CONTINUED
 
 
+
+
+
+
+
+
+
+    ggplot(pheno_sub, aes(y = pheno_sub[, "tpm"], x = pheno_sub[, pheno_select])) +
+          geom_smooth( method = lm) +
+          geom_point() +
+          scale_x_continuous(paste(gene_select, " TPM (Transcript per million)")) +
+          scale_y_continuous(paste("Log-transformed ", input$pheno)) +
+          labs( title = paste(""gene_select, " "))
+
+data <- RNA_pheno[ complete.cases(RNA_pheno$C2_log),]
+
+fit <- lm(C2_log ~ Tgm2, data)
+fitsum <- summary(fit)
+intcp <- signif(coef(fit)[1], 3)
+slope <- signif(coef(fit)[2], 3)
+pval <- signif(fitsum$coefficients[2,4], 3)
+r2 <- signif(fitsum$adj.r.squared, 3)
+eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
+GFR <- ggplot(data, aes(y = C2_log, x = Tgm2)) +
+	geom_smooth(method = lm) +
+	geom_point() +
+	background_grid(major = 'y', minor = "none") +
+	annotate( "text" , x = 200, y = 6.5,label = eq, fontface = "bold", size = 4) +
+	scale_x_continuous( "Tgm2 TPM", breaks = seq(0, max(data$Tgm2), by = 50)) +
+	scale_y_continuous( "log-transformed C2 GFR", breaks = seq(0, max(data$C2_log), by = 0.5)) +
+	labs( title = "Tgm2 TPM vs log C2 GFR (Both sexes, n=126)") +
+	theme(plot.title = element_text(hjust = 0.5))
 
 
 
