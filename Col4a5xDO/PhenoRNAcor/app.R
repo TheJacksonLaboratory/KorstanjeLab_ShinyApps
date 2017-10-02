@@ -14,7 +14,7 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Spearman Correlation: Phenotype v. Gene Expression"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Plotting Correlations: Phenotype v. Gene Expression"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
@@ -49,8 +49,9 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Spearman Correlation: Phenotype v. Gene Expression v.1.0.0, powered by R/Shiny, developed by Yuka Takemon, ",
-          "souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
+      div("Plotting Correlations: Phenotype v. Gene Expression v.1.0.0, powered by R/Shiny, developed by ",
+          a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
+          ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
     ),
 
@@ -69,9 +70,9 @@ server <- function(input, output) {
 
   # Create plot function ------------------------------------------
   Correlation_plot <- function(){
-    gene_select <- input$gene_input # gene_select <- "Pik3r1"
-    pheno_select <- input$pheno # pheno_select <- "ACR at 6 weeks"
-    sex_select <- input$sex # sex_select <- "Males"
+    gene_select <- input$gene_input # gene_select <- "Gapdh"
+    pheno_select <- input$pheno # pheno_select <- "Glomerular filtration rate"
+    sex_select <- input$sex # sex_select <- "Both"
 
     # Figure out if gene input is gene symbol or ENSEMBL_ID
     if ( substr(gene_select, 1, 7) == "ENSMUSG"){
@@ -111,7 +112,7 @@ server <- function(input, output) {
     # Extract selected gene TPM count
     TPM <- RNA_seq[,mart_extract$ensembl_gene_id]
     # Check to see if TPM was found
-    if (nrow(TPM) == 0){
+    if (length(TPM) == 0){
       validate(nrow(TPM) != 0, "Cannot query! Query gene not found in RNA-seq data.")
       stop("Cannot query! Query gene not found in RNA-seq data.")
     }
@@ -131,63 +132,15 @@ server <- function(input, output) {
     r2 <- signif(fitsum$adj.r.squared, 3)
     eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
 
-# difference between cor and lm,r2
-cor(pheno_sub[,pheno_select], pheno_sub[,"tpm"], method = "pearson")
-###### TOBE CONTINUED
-
-
-
-
-
-
-
-
-
+    # Plot
     ggplot(pheno_sub, aes(y = pheno_sub[, "tpm"], x = pheno_sub[, pheno_select])) +
           geom_smooth( method = lm) +
           geom_point() +
-          scale_x_continuous(paste(gene_select, " TPM (Transcript per million)")) +
-          scale_y_continuous(paste("Log-transformed ", input$pheno)) +
-          labs( title = paste(""gene_select, " "))
-
-data <- RNA_pheno[ complete.cases(RNA_pheno$C2_log),]
-
-fit <- lm(C2_log ~ Tgm2, data)
-fitsum <- summary(fit)
-intcp <- signif(coef(fit)[1], 3)
-slope <- signif(coef(fit)[2], 3)
-pval <- signif(fitsum$coefficients[2,4], 3)
-r2 <- signif(fitsum$adj.r.squared, 3)
-eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
-GFR <- ggplot(data, aes(y = C2_log, x = Tgm2)) +
-	geom_smooth(method = lm) +
-	geom_point() +
-	background_grid(major = 'y', minor = "none") +
-	annotate( "text" , x = 200, y = 6.5,label = eq, fontface = "bold", size = 4) +
-	scale_x_continuous( "Tgm2 TPM", breaks = seq(0, max(data$Tgm2), by = 50)) +
-	scale_y_continuous( "log-transformed C2 GFR", breaks = seq(0, max(data$C2_log), by = 0.5)) +
-	labs( title = "Tgm2 TPM vs log C2 GFR (Both sexes, n=126)") +
-	theme(plot.title = element_text(hjust = 0.5))
-
-
-
-
-
-
-
-
-
-
-    ggdata <- melt(data_coef)
-    colnames(ggdata) <- c("Founder", "Sex", "Value")
-    ggplot(ggdata, aes( x = Founder, y = Value, fill = Sex)) +
-    	geom_bar( stat = "identity", position = "dodge") +
-    	scale_fill_discrete( labels = c("Females","Males")) +
-    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
-    				x = "DO Founders",
-    				y = paste0(pheno_select, " values")) +
-    	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
-    }
+          scale_x_continuous(paste0(gene_select, " TPM (Transcript per million)")) +
+          scale_y_continuous(paste0("Log-transformed ", input$pheno)) +
+          labs( title = paste0("Log-transformed ", input$pheno, " v. ", gene_select, " Correlation"),
+                subtitle = eq)
+  }
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
@@ -197,12 +150,12 @@ GFR <- ggplot(data, aes(y = C2_log, x = Tgm2)) +
   # Download plot --------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
-      paste0(input$gene_input, "_allele_effect.pdf")
+      paste0(input$pheno, "v", input$gene_input, "correlation.pdf")
       },
     # content must be a function with arguemtn files to write plot
     content <- function(file) {
       pdf(file, width = 11, height = 7) #open device
-        print(AlleleEffect_plot()) #print plot
+        print(Correlation_plot()) #print plot
       dev.off() # close device
     }
   )
