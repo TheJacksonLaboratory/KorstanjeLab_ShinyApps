@@ -57,7 +57,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Isoforms v.1.0.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Isoforms v.1.1.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -81,6 +81,11 @@ server <- function(input, output) {
     gene <- input$gene_input # gene <- "Aspa"
     binwidth <- input$binwidth # binwidth <- 0.02
     dotsize <- input$dotsize # dotsize <- 0.02
+
+    if (gene == "Enter query here"){
+      return(NULL)
+    }
+
 
     # Figure out if gene symbol or ENSEMBL ID
     if ( substr(gene, 1, 7) == "ENSMUSG"){
@@ -159,7 +164,10 @@ server <- function(input, output) {
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
-    isoform_plot()
+      if (is.null(isoform_plot())){
+        return(NULL)
+      }
+      isoform_plot()
     })
 
   # Download plot --------------------------
