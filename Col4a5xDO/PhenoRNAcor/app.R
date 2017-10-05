@@ -49,7 +49,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Plotting Correlations: Phenotype v. Gene Expression v.1.0.0, powered by R/Shiny, developed by ",
+      div("Plotting Correlations: Phenotype v. Gene Expression v.1.1.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -73,6 +73,10 @@ server <- function(input, output) {
     gene_select <- input$gene_input # gene_select <- "Gapdh"
     pheno_select <- input$pheno # pheno_select <- "Glomerular filtration rate"
     sex_select <- input$sex # sex_select <- "Both"
+
+    if (gene_select == "Enter query here"){
+      return( NULL)
+    }
 
     # Figure out if gene input is gene symbol or ENSEMBL_ID
     if ( substr(gene_select, 1, 7) == "ENSMUSG"){
@@ -144,7 +148,10 @@ server <- function(input, output) {
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
-    Correlation_plot()
+      if (is.null(Correlation_plot())){
+        return(NULL)
+      }
+      Correlation_plot()
     })
 
   # Download plot --------------------------
