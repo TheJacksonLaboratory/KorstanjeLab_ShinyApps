@@ -5,9 +5,10 @@ library(DOQTL)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/genoprobs/best.genoprobs.192.Rdata")
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/GM_snps.Rdata")
-pheno <- read.delim("/projects/ytakemon/Col4a5xDO/Phenotype/Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
+load("best.genoprobs.192.Rdata")
+load("GM_snps.Rdata")
+pheno <- read.delim("Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
@@ -46,7 +47,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Allele Effect v.1.1.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Allele Effect v.1.1.1, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -75,7 +76,7 @@ server <- function(input, output) {
     }
 
     #Select phenotype and load qtl file
-    qtl_dir <- "/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/qtl/"
+    qtl_dir <- "./qtl/"
     if (pheno_select == "Glomerular filtration rate"){
       file <- "qtl.GFR.log.C2.192.Rdata"
       load(paste0(qtl_dir, file))
