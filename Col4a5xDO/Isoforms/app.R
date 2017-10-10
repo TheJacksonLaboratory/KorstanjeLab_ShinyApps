@@ -4,9 +4,10 @@ library(ggplot2)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
+load("./Gene_allele.Rdata")
 Gene_allele <- as.data.frame(Gene_allele)
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
+load("./All_transcript_tpm.Rdata")
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -57,7 +58,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Isoforms v.1.1.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Isoforms v.1.1.1, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -86,7 +87,6 @@ server <- function(input, output) {
       return(NULL)
     }
 
-
     # Figure out if gene symbol or ENSEMBL ID
     if ( substr(gene, 1, 7) == "ENSMUSG"){
       mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
@@ -102,6 +102,12 @@ server <- function(input, output) {
       																mart = ensembl)
     }
     # Extract transcript list for input gene
+    if (nrow(mart_extract) == 0){
+      validate(
+        need(nrow(mart_extract) != 0, "Query gene not found.")
+      )
+    }
+
     transcript_list <- mart_extract$ensembl_transcript_id
     gene_id <- mart_extract$ensembl_gene_id[1]
 

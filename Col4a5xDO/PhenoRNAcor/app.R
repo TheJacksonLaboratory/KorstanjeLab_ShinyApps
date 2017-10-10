@@ -4,8 +4,9 @@ library(biomaRt)
 library(ggplot2)
 
 # Load essential data ----------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/RNA_seq_tpm.Rdata")
-pheno <- read.delim("/projects/ytakemon/Col4a5xDO/Phenotype/Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
+load("./RNA_seq_tpm.Rdata")
+pheno <- read.delim("./Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
                       verbose = TRUE)
@@ -49,7 +50,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Plotting Correlations: Phenotype v. Gene Expression v.1.1.0, powered by R/Shiny, developed by ",
+      div("Plotting Correlations: Phenotype v. Gene Expression v.1.1.1, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -91,6 +92,13 @@ server <- function(input, output) {
                             filters = "mgi_symbol",
                             values = gene_select,
       											mart = ensembl)
+    }
+
+    # Validate query
+    if (nrow(mart_extract) == 0){
+      validate(
+        need(nrow(mart_extract) != 0, "Query gene not found.")
+      )
     }
 
     # Update selected phenotype

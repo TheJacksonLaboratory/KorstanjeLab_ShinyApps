@@ -1,6 +1,6 @@
 library(shiny)
 # All eQTL maps are located in helix @ /home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/
-
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/")
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 
@@ -24,7 +24,7 @@ ui <- fluidPage(
 
       br(),
       br(),
-      div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO eQTL v.1.0.1, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -42,23 +42,32 @@ server <- function(input, output) {
   # Display query gene in below text entry box -----------------------
   output$value <- renderText({input$gene_input})
 
+
   # Render image -----------------------------
   output$image <- renderImage({
   # Find image
-  path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-  file <- list.files(path = path, pattern = paste0(".",input$gene_input,"."))
-  file_path <- paste0(path,file)
-  list(src = file_path)
+  file <- list.files(pattern = paste0("\\.",input$gene_input,"\\."))
+
+  if(input$gene_input == "Enter query here"){
+    validate(
+      need(input$gene_input != "Enter query here", "Please enter a gene.")
+    )
+  } else if (input$gene_input != "Enter query here"){
+    validate(
+      need(length(file) == 1, "Queried gene cannot be found.")
+    )
+  }
+
+
+  list(src = file)
   }, deleteFile = FALSE)
 
   # Download handler --------------------------
   output$download_image <- downloadHandler(
     filename <- paste0(input$gene_input, "_eQTL_map.pdf"),
     content <- function(downloadFile) {
-      path <- "/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/"
-      file <- list.files(path = path, pattern = input$gene_input)
-      file_path <- paste0(path,file)
-      file.copy(file_path, downloadFile)
+      file <- list.files(pattern = input$gene_input)
+      file.copy(file, downloadFile)
     }
   )
 }

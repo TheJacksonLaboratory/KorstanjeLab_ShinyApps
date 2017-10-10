@@ -1,5 +1,6 @@
 library(shiny)
 # All eQTL maps are located in helix @ /home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/")
 
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
@@ -26,7 +27,7 @@ ui <- fluidPage(
 
       br(),
       br(),
-      div("Col4a5xDO eQTL v.1.0.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO eQTL v.1.0.1, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -44,7 +45,6 @@ server <- function(input, output) {
   # Render image -----------------------------
   output$image <- renderImage({
     # Find image
-    path <- "/home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/"
     # Based on input drop down choices
     if (input$pheno == "Glomerular filtration rate"){
       file <- "Figure4.1_qtl.log.C2.GFR.noX.pdf"
@@ -56,15 +56,13 @@ server <- function(input, output) {
       file <- "Figure4.4_qtl.log.Alb15wk.noX.pdf"
     }
     # Define absolute path and list source
-    file_path <- paste0(path, file)
-    list(src = file_path)
+    list(src = file)
   }, deleteFile = FALSE)
 
   # Download handler --------------------------
   output$download_image <- downloadHandler(
     filename <- paste0(input$pheno, "_QTL_map.pdf"),
     content <- function(downloadFile) {
-      path <- "/home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/"
       # Based on input drop down choices
       if (input$pheno == "Glomerular filtration rate"){
         file <- "Figure4.1_qtl.log.C2.GFR.noX.pdf"
@@ -75,8 +73,7 @@ server <- function(input, output) {
       } else if (input$pheno == "Albumin normalized to creatinine at 15 weeks"){
         file <- "Figure4.4_qtl.log.Alb15wk.noX.pdf"
       }
-      file_path <- paste0(path, file)
-      file.copy(file_path, downloadFile)
+      file.copy(file, downloadFile)
     }
   )
 }
