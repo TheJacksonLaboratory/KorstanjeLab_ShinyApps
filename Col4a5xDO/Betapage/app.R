@@ -65,7 +65,8 @@ ui <- fluidPage(
 
     # Main panel for displaying outputs ------------------
     mainPanel(
-      imageOutput("plot")
+      imageOutput("plot"),
+      htmlOutput("gene_links")
     )
   )
 )
@@ -170,7 +171,7 @@ server <- function(input, output) {
       isoform_plot()
     })
 
-  # Download plot --------------------------
+  # Download plot -----------------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
       paste0(input$gene_input, "_expressed_isoforms.pdf")
@@ -182,6 +183,41 @@ server <- function(input, output) {
       dev.off() # close device
     }
   )
+
+  # Output links ----------------------------------
+  output$gene_links <- renderText({
+    # if not ready
+    if(is.null(isoform_plot())){
+      return(NULL)
+    }
+
+    # find gene links
+    gene <- input$gene_input
+    if ( substr(gene, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "ensembl_gene_id",
+                                      values = gene,
+      																mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "mgi_symbol",
+                                      values = gene,
+      																mart = ensembl)
+    }
+    symbol <- mart_extract$mgi_symbol[1]
+    ens_id <- mart_extract$ensembl_gene_id[1]
+    chr <- mart_extract$chromosome_name[1]
+    start <- mart_extract$start_position[1]
+    end <- mart_extract$end_position[1]
+    ensembl_link <- paste0("http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=", ens_id)
+    mgi_link <- paste0("http://www.informatics.jax.org/searchtool/Search.do?query=", ens_id)
+
+    # output links
+    paste(p(symbol, "was entered"))
+  })
+
 }
 
 # Run the app -----------------------------------------------------------------
