@@ -2,12 +2,12 @@ library(shiny)
 library(biomaRt)
 
 # All eQTL maps are located in helix @ /home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/
-setwd("/home/ytakemon/ShinyApps/Col4a5xDO/eQTL/www/")
+setwd("/opt/Col4a5xDO/eQTL/www/")
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – eQTL"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/Col4a5xDO/")," – eQTL"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(

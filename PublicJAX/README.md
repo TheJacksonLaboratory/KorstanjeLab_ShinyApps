@@ -1,2 +1,2 @@
 # KorstanjeLab_ShinyApps
-Homepage link (JAX network only): http://ctshiny01:3838/ytakemon/
+Homepage link: http://ctronshiny01:3838/Col4a5xDO/

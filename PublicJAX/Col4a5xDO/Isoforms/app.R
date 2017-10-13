@@ -4,9 +4,9 @@ library(ggplot2)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
+load("/opt/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
 Gene_allele <- as.data.frame(Gene_allele)
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
+load("/opt/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -15,7 +15,7 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Isoform query"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/Col4a5xDO/")," – Isoform query"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
