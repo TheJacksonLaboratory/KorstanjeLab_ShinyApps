@@ -1,12 +1,15 @@
 library(shiny)
 library(biomaRt)
 library(ggplot2)
+library(DOQTL)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
-Gene_allele <- as.data.frame(Gene_allele)
-load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
+setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
+load("best.genoprobs.192.Rdata")
+load("GM_snps.Rdata")
+pheno <- read.delim("Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
+
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -15,16 +18,22 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Isoform query"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Allele Effect"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
     # Sidebar panel for inputs ------------------
     sidebarPanel(
       # Header
-      #p(span("Please use safari to view eQTL maps!", style = "color:blue")),
       p("Both Ensembl ID and gene names can be queried."),
       br(),
+      # Select Phenotype
+      selectInput(inputId = "pheno",
+                  label = "Select Phenotype",
+                  choices = c("Glomerular filtration rate",
+                              "ACR at 6 weeks",
+                              "ACR at 10 weeks",
+                              "ACR at 15 weeks")),
       # Input text box
       textInput(inputId = "gene_input",
                 label = "Gene Query",
@@ -33,31 +42,12 @@ ui <- fluidPage(
       # Confirmation text
       fluidRow(column(verbatimTextOutput("value"),
                width = 12)),
-      # Slider Input for bin width
-      sliderInput(inputId = "binwidth",
-                  label = "Adjust bin width:",
-                  min = 0,
-                  max = 10,
-                  value = 1,
-                  step = 0.02),
-      # Slider input for dot size
-      sliderInput(inputId = "dotsize",
-                  label = "Adjust dot size:",
-                  min = 0,
-                  max = 10,
-                  value = 1,
-                  step = 0.2),
-      # Checkbox for allele plot
-      checkboxInput(inputId = "allele_check",
-                    label = "Plot by allele",
-                    value = FALSE),
-
       # Dowload eQTl map
       downloadButton("download_plot",
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Isoforms v.1.1.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Allele Effect v.1.2.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -78,116 +68,144 @@ server <- function(input, output) {
   output$value <- renderText({input$gene_input})
 
   # Create plot function ------------------------------------------
-  isoform_plot <- function(){
-    gene <- input$gene_input # gene <- "Aspa"
-    binwidth <- input$binwidth # binwidth <- 0.02
-    dotsize <- input$dotsize # dotsize <- 0.02
+  AlleleEffect_plot <- function(){
+    gene_select <- input$gene_input # gene_select <- "Pik3r1"
+    pheno_select <- input$pheno # pheno_select <- "ACR at 6 weeks"
 
-    if (gene == "Enter query here"){
+    if (gene_select == "Enter query here"){
       return(NULL)
     }
 
+    #Select phenotype and load qtl file
+    qtl_dir <- "./qtl/"
+    if (pheno_select == "Glomerular filtration rate"){
+      file <- "qtl.GFR.log.C2.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.GFR.log.C2.192
+    } else if (pheno_select == "ACR at 6 weeks"){
+      file <- "qtl.log.ACR6WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.log.ACR6WK.192
+    } else if (pheno_select == "ACR at 10 weeks"){
+      file <- "qtl.log.ACR10WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl  <- qtl.log.ACR10WK.192
+    } else if (pheno_select == "ACR at 15 weeks"){
+      file <- "qtl.log.ACR15WK.192.Rdata"
+      load(paste0(qtl_dir, file))
+      qtl <- qtl.log.ACR15WK.192
+    }
 
-    # Figure out if gene symbol or ENSEMBL ID
-    if ( substr(gene, 1, 7) == "ENSMUSG"){
-      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
-      																"chromosome_name", "start_position", "end_position"),
-                                      filters = "ensembl_gene_id",
-                                      values = gene,
-      																mart = ensembl)
+    # Figure out if gene input is gene symbol or ENSEMBL_ID
+    if ( substr(gene_select, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_name",
+                                           "start_position", "end_position"),
+                            filters = "ensembl_gene_id",
+                            values = gene_select,
+      											mart = ensembl)
     } else {
-      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
-      																"chromosome_name", "start_position", "end_position"),
-                                      filters = "mgi_symbol",
-                                      values = gene,
-      																mart = ensembl)
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_name",
+                                           "start_position", "end_position"),
+                            filters = "mgi_symbol",
+                            values = gene_select,
+      											mart = ensembl)
     }
-    # Extract transcript list for input gene
-    transcript_list <- mart_extract$ensembl_transcript_id
-    gene_id <- mart_extract$ensembl_gene_id[1]
+    # Validate
+    validate(
+      need(nrow(mart_extract) > 0, "Gene not found in Ensembl mm10 database. Please check and try again!")
+    )
 
-    #Create new dataframe with only TPM from list of transcirpts
-    transcript_list <- colnames(All_transcript_tpm)[colnames(All_transcript_tpm) %in% transcript_list]
-    TPM <- All_transcript_tpm[,transcript_list]
-    gg_data <- melt(TPM, id.vars = transcript_list,
-    	value.name = "TPM")
-    gg_data$Allele <- Gene_allele[,mart_extract$ensembl_gene_id[1]]
+    # Gather chr, start, end information
+    chr <- mart_extract$chromosome_name
+    start <- (mart_extract$start_position / (1e6))
+    end <- (mart_extract$end_position / (1e6))
 
-    # Determine if allele check (default is FALSE)
-    # If FALSE, allele check is not selected
-    if (!input$allele_check){
-    # iso_plot
-      if (is.na(names(gg_data)[2])){
-        gg_data$Transcript <- transcript_list
-        ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Transcript)) +
-        	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
-          scale_fill_brewer(palette = "Set3") +
-        	scale_x_discrete(paste0(gene, " Transcripts")) +
-        	scale_y_continuous("TPM Counts") +
-          guides(fill = FALSE)+
-        	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-        	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 0, vjust = 0.5))
-      } else {
-      names(gg_data)[2] <- "Transcripts"
-      ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Transcripts)) +
-      	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize) +
-        scale_fill_brewer(palette = "Set3") +
-      	scale_x_discrete(paste0(gene, " Transcripts")) +
-      	scale_y_continuous("TPM Counts") +
-        guides(fill = FALSE)+
-      	labs( title = paste0("Comparison of ", gene, " transcript TPM counts")) +
-      	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 15, vjust = 0.5))
-      }
-    # If TRUE, allele check is on
-    } else if (input$allele_check){
-    # allele_iso_plot
-      if (is.na(names(gg_data)[2])){
-        gg_data$Transcript <- transcript_list
-        ggplot(gg_data, aes(x =Transcript, y = TPM, fill =Allele)) +
-        	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = binwidth, dotsize = dotsize, position_dodge(1)) +
-        	scale_x_discrete(paste0(gene, " Transcripts")) +
-        	scale_y_continuous("TPM Counts") +
-          scale_fill_brewer(palette = "Set3") +
-        	labs( title = paste0("Comparison of ", gene, " transcript TPM counts by allele")) +
-        	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 0, vjust = 0.5))
-      } else {
-      names(gg_data)[2] <- "Transcripts"
-      ggplot(gg_data, aes(x =Transcripts, y = TPM, fill =Allele)) +
-      	geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 2, dotsize = dotsize, position = position_dodge(1)) +
-      	scale_x_discrete(paste0(gene, " Transcripts")) +
-      	scale_y_continuous("TPM Counts") +
-        scale_fill_brewer(palette = "Set3") +
-      	labs( title = paste0("Comparison of ", gene, " transcript TPM counts by allele")) +
-      	theme( plot.title = element_text(hjust = 0.5), axis.text.x=element_text(angle = 15, vjust = 0.5))
-      }
+    # Find marker in QTL object
+    qtl <- qtl$lod$A
+    qtl <- qtl[qtl$chr == chr,]
+    qtl <- qtl[qtl$pos >= start,]
+    qtl <- qtl[qtl$pos <= end,]
+    target <- qtl[qtl$lod == max(qtl$lod),]
+
+    # Check to see if target was found
+    validate(
+      need(nrow(target) != 0, "Cannot query! No markers found in query gene region")
+    )
+
+    #calculate coef at target marker depending on the pheno_select variable
+    if (pheno_select == "Glomerular filtration rate"){
+      fit <- lm(pheno$C2_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(ul/min)"
+    } else if (pheno_select == "ACR at 6 weeks"){
+      fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
+    } else if (pheno_select == "ACR at 10 weeks"){
+      fit <- lm(pheno$ACR10WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
+    } else if (pheno_select == "ACR at 15 weeks"){
+      fit <- lm(pheno$ACR15WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
     }
-  }
+
+    #Female averages by strain at Snp marker
+    cfit <- coef(fit)
+    cfit[10] = 0 #set standard (ie strain compared to) to 0
+    cfit <- cfit + cfit[1]  #add female
+    ecfit <- exp(cfit) #exp fixes values back to natural numbers
+    ecfit_F <- as.data.frame(ecfit)
+
+    #Male averages by strain at snp marker
+    cfit <- coef(fit)
+    cfit[10] = 0 #set standard (ie strain compared to) to 0
+    cfit <- cfit + cfit[1] + cfit[2] #add female and male = male (female = female, male = male + female)
+    ecfit <- exp(cfit) #exp fixes balues back to natural numbers
+    ecfit_M <- as.data.frame(ecfit)
+
+    # Combine both sexes
+    data_coef <- ecfit_F
+    data_coef$M <- ecfit_M$ecfit
+    colnames(data_coef) <- c("F","M")
+    names(data_coef) <- c("F","M")
+    data_coef <- data_coef[c(3:10),]
+    rownames(data_coef) <- c("A","B","C","D","E","F","G","H")
+    data_coef$founder <- rownames(data_coef)
+
+    ggdata <- melt(data_coef)
+    colnames(ggdata) <- c("Founder", "Sex", "Value")
+    ggplot(ggdata, aes( x = Founder, y = Value, fill = Sex)) +
+    	geom_bar( stat = "identity", position = "dodge") +
+    	scale_fill_discrete( labels = c("Females","Males")) +
+    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
+    				x = "DO Founders",
+    				y = paste(pheno_select, values)) +
+    	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
+    }
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
-      if (is.null(isoform_plot())){
+      if (is.null(AlleleEffect_plot())){
         return(NULL)
       }
-      isoform_plot()
+      AlleleEffect_plot()
     })
 
-  # Download plot -----------------------------------
+  # Download plot --------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
-      paste0(input$gene_input, "_expressed_isoforms.pdf")
+      paste0(input$gene_input, "_allele_effect.pdf")
       },
     # content must be a function with arguemtn files to write plot
     content <- function(file) {
       pdf(file, width = 11, height = 7) #open device
-        print(isoform_plot()) #print plot
+        print(AlleleEffect_plot()) #print plot
       dev.off() # close device
     }
   )
 
-  # Output links ----------------------------------
+  # Output links --------------------------------
   output$gene_links <- renderText({
     # if not ready
-    if(is.null(isoform_plot())){
+    if(is.null(AlleleEffect_plot())){
       return(NULL)
     }
 
@@ -215,9 +233,10 @@ server <- function(input, output) {
     mgi_link <- paste0("http://www.informatics.jax.org/searchtool/Search.do?query=", ens_id)
 
     # output links
-    paste(p(symbol, "was entered"))
+    paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
+          a("[Ensembl]", href = ensembl_link, target="_blank"),
+          a("[MGI]", href = mgi_link, target = "_blank"))
   })
-
 }
 
 # Run the app -----------------------------------------------------------------
