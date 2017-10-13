@@ -4,10 +4,9 @@ library(ggplot2)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
-load("./Gene_allele.Rdata")
+load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/Gene_allele.Rdata")
 Gene_allele <- as.data.frame(Gene_allele)
-load("./All_transcript_tpm.Rdata")
+load("/projects/ytakemon/Col4a5xDO/best.compiled.genoprob/RNA_seq_Rdata/All_transcript_tpm.Rdata")
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
@@ -58,7 +57,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Isoforms v.1.1.1, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Isoforms v.1.2.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -66,7 +65,8 @@ ui <- fluidPage(
 
     # Main panel for displaying outputs ------------------
     mainPanel(
-      imageOutput("plot")
+      imageOutput("plot"),
+      htmlOutput("gene_links")
     )
   )
 )
@@ -87,6 +87,7 @@ server <- function(input, output) {
       return(NULL)
     }
 
+
     # Figure out if gene symbol or ENSEMBL ID
     if ( substr(gene, 1, 7) == "ENSMUSG"){
       mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
@@ -101,13 +102,13 @@ server <- function(input, output) {
                                       values = gene,
       																mart = ensembl)
     }
-    # Extract transcript list for input gene
-    if (nrow(mart_extract) == 0){
-      validate(
-        need(nrow(mart_extract) != 0, "Query gene not found.")
-      )
-    }
 
+    # Validate query
+    validate(
+      need(nrow(mart_extract) > 0, "Gene not found in Ensembl mm10 database. Please check and try again!")
+    )
+
+    # Extract transcript list for input gene
     transcript_list <- mart_extract$ensembl_transcript_id
     gene_id <- mart_extract$ensembl_gene_id[1]
 
@@ -176,7 +177,7 @@ server <- function(input, output) {
       isoform_plot()
     })
 
-  # Download plot --------------------------
+  # Download plot -----------------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
       paste0(input$gene_input, "_expressed_isoforms.pdf")
@@ -188,6 +189,43 @@ server <- function(input, output) {
       dev.off() # close device
     }
   )
+
+  # Output links ----------------------------------
+  output$gene_links <- renderText({
+    # if not ready
+    if(is.null(isoform_plot())){
+      return(NULL)
+    }
+
+    # find gene links
+    gene <- input$gene_input
+    if ( substr(gene, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "ensembl_gene_id",
+                                      values = gene,
+      																mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "mgi_symbol",
+                                      values = gene,
+      																mart = ensembl)
+    }
+    symbol <- mart_extract$mgi_symbol[1]
+    ens_id <- mart_extract$ensembl_gene_id[1]
+    chr <- mart_extract$chromosome_name[1]
+    start <- mart_extract$start_position[1]
+    end <- mart_extract$end_position[1]
+    ensembl_link <- paste0("http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=", ens_id)
+    mgi_link <- paste0("http://www.informatics.jax.org/searchtool/Search.do?query=", ens_id)
+
+    # output links
+    paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
+          a("[Ensembl]", href = ensembl_link, target="_blank"),
+          a("[MGI]", href = mgi_link, target = "_blank"))
+  })
+
 }
 
 # Run the app -----------------------------------------------------------------
