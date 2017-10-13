@@ -1,24 +1,21 @@
+# R/3.4.1
 library(shiny)
 library(biomaRt)
 library(ggplot2)
-library(DOQTL)
-library(reshape2)
 
-# Load essential data ---------------------------------------------------------
+# Load essential data ----------------------------------------------------------
 setwd("/home/ytakemon/ShinyApps/Col4a5xDO/RefData/")
-load("best.genoprobs.192.Rdata")
-load("GM_snps.Rdata")
-pheno <- read.delim("Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
-
-# Get mm10 data
+load("./RNA_seq_tpm.Rdata")
+pheno <- read.delim("./Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",
                       verbose = TRUE)
+
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Allele Effect"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctshiny01:3838/ytakemon/Col4a5xDO/")," – Plotting Correlations: Phenotype v. Gene Expression"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
@@ -42,12 +39,18 @@ ui <- fluidPage(
       # Confirmation text
       fluidRow(column(verbatimTextOutput("value"),
                width = 12)),
+      # Select Sex
+      selectInput(inputId = "sex",
+                  label = "Select Sex",
+                  choices = c("Both",
+                              "Females",
+                              "Males")),
       # Dowload eQTl map
       downloadButton("download_plot",
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Allele Effect v.1.2.0, powered by R/Shiny, developed by ",
+      div("Plotting Correlations: Phenotype v. Gene Expression v.1.2.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -68,32 +71,13 @@ server <- function(input, output) {
   output$value <- renderText({input$gene_input})
 
   # Create plot function ------------------------------------------
-  AlleleEffect_plot <- function(){
-    gene_select <- input$gene_input # gene_select <- "Pik3r1"
-    pheno_select <- input$pheno # pheno_select <- "ACR at 6 weeks"
+  Correlation_plot <- function(){
+    gene_select <- input$gene_input # gene_select <- "Gapdh"
+    pheno_select <- input$pheno # pheno_select <- "Glomerular filtration rate"
+    sex_select <- input$sex # sex_select <- "Both"
 
     if (gene_select == "Enter query here"){
-      return(NULL)
-    }
-
-    #Select phenotype and load qtl file
-    qtl_dir <- "./qtl/"
-    if (pheno_select == "Glomerular filtration rate"){
-      file <- "qtl.GFR.log.C2.192.Rdata"
-      load(paste0(qtl_dir, file))
-      qtl <- qtl.GFR.log.C2.192
-    } else if (pheno_select == "ACR at 6 weeks"){
-      file <- "qtl.log.ACR6WK.192.Rdata"
-      load(paste0(qtl_dir, file))
-      qtl <- qtl.log.ACR6WK.192
-    } else if (pheno_select == "ACR at 10 weeks"){
-      file <- "qtl.log.ACR10WK.192.Rdata"
-      load(paste0(qtl_dir, file))
-      qtl  <- qtl.log.ACR10WK.192
-    } else if (pheno_select == "ACR at 15 weeks"){
-      file <- "qtl.log.ACR15WK.192.Rdata"
-      load(paste0(qtl_dir, file))
-      qtl <- qtl.log.ACR15WK.192
+      return( NULL)
     }
 
     # Figure out if gene input is gene symbol or ENSEMBL_ID
@@ -110,94 +94,88 @@ server <- function(input, output) {
                             values = gene_select,
       											mart = ensembl)
     }
-    # Validate
-    validate(
-      need(nrow(mart_extract) > 0, "Gene not found in Ensembl mm10 database. Please check and try again!")
-    )
 
-    # Gather chr, start, end information
-    chr <- mart_extract$chromosome_name
-    start <- (mart_extract$start_position / (1e6))
-    end <- (mart_extract$end_position / (1e6))
+    # Validate query
+    if (nrow(mart_extract) == 0){
+      validate(
+        need(nrow(mart_extract) != 0, "Query gene not found.")
+      )
+    }
 
-    # Find marker in QTL object
-    qtl <- qtl$lod$A
-    qtl <- qtl[qtl$chr == chr,]
-    qtl <- qtl[qtl$pos >= start,]
-    qtl <- qtl[qtl$pos <= end,]
-    target <- qtl[qtl$lod == max(qtl$lod),]
-
-    # Check to see if target was found
-    validate(
-      need(nrow(target) != 0, "Cannot query! No markers found in query gene region")
-    )
-
-    #calculate coef at target marker depending on the pheno_select variable
+    # Update selected phenotype
     if (pheno_select == "Glomerular filtration rate"){
-      fit <- lm(pheno$C2_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
-      values <- "(ul/min)"
+      pheno_select <- "C2_log"
+      value <- "(ul/min)"
     } else if (pheno_select == "ACR at 6 weeks"){
-      fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
-      values <- "(mg/g)"
+      pheno_select <- "ACR6WK_log"
+      value <- "(mg/g)"
     } else if (pheno_select == "ACR at 10 weeks"){
-      fit <- lm(pheno$ACR10WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
-      values <- "(mg/g)"
+      pheno_select <- "ACR10WK_log"
+      value <- "(mg/g)"
     } else if (pheno_select == "ACR at 15 weeks"){
-      fit <- lm(pheno$ACR15WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
-      values <- "(mg/g)"
+      pheno_select <- "ACR15WK_log"
+      value <- "(mg/g)"
     }
 
-    #Female averages by strain at Snp marker
-    cfit <- coef(fit)
-    cfit[10] = 0 #set standard (ie strain compared to) to 0
-    cfit <- cfit + cfit[1]  #add female
-    ecfit <- exp(cfit) #exp fixes values back to natural numbers
-    ecfit_F <- as.data.frame(ecfit)
-
-    #Male averages by strain at snp marker
-    cfit <- coef(fit)
-    cfit[10] = 0 #set standard (ie strain compared to) to 0
-    cfit <- cfit + cfit[1] + cfit[2] #add female and male = male (female = female, male = male + female)
-    ecfit <- exp(cfit) #exp fixes balues back to natural numbers
-    ecfit_M <- as.data.frame(ecfit)
-
-    # Combine both sexes
-    data_coef <- ecfit_F
-    data_coef$M <- ecfit_M$ecfit
-    colnames(data_coef) <- c("F","M")
-    names(data_coef) <- c("F","M")
-    data_coef <- data_coef[c(3:10),]
-    rownames(data_coef) <- c("A","B","C","D","E","F","G","H")
-    data_coef$founder <- rownames(data_coef)
-
-    ggdata <- melt(data_coef)
-    colnames(ggdata) <- c("Founder", "Sex", "Value")
-    ggplot(ggdata, aes( x = Founder, y = Value, fill = Sex)) +
-    	geom_bar( stat = "identity", position = "dodge") +
-    	scale_fill_discrete( labels = c("Females","Males")) +
-    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
-    				x = "DO Founders",
-    				y = paste(pheno_select, values)) +
-    	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
+    #  Update selected Sex
+    if (sex_select == "Both"){
+      sex_select <- c("M","F")
+    } else if (sex_select == "Females"){
+      sex_select <- "F"
+    } else if (sex_select == "Males"){
+      sex_select <- "M"
     }
+
+    # Extract selected gene TPM count
+    TPM <- RNA_seq[,mart_extract$ensembl_gene_id]
+    # Check to see if TPM was found
+    if (length(TPM) == 0){
+      validate(nrow(TPM) != 0, "Cannot query! Query gene not found in RNA-seq data.")
+      stop("Cannot query! Query gene not found in RNA-seq data.")
+    }
+    pheno$tpm <- TPM
+
+    # Subset pheno data based on selected sexes
+    pheno_sub <- pheno[pheno$Sex %in% sex_select,]
+    # Make sure complete cases for selected phenotype
+    pheno_sub <- pheno_sub[complete.cases(pheno_sub[,pheno_select]),]
+
+    # Calculate equation for subtitle
+    fit <- lm(pheno_sub[,pheno_select] ~ pheno_sub[,"tpm"], data = pheno_sub)
+    fitsum <- summary(fit)
+    intcp <- signif(coef(fit)[1], 3)
+    slope <- signif(coef(fit)[2], 3)
+    pval <- signif(fitsum$coefficients[2,4], 3)
+    r2 <- signif(fitsum$adj.r.squared, 3)
+    eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
+
+    # Plot
+    ggplot(pheno_sub, aes(y = pheno_sub[, "tpm"], x = pheno_sub[, pheno_select])) +
+          geom_smooth( method = lm) +
+          geom_point() +
+          scale_x_continuous(paste(gene_select, "TPM (Transcript per million)")) +
+          scale_y_continuous(paste("Log-transformed", input$pheno, value)) +
+          labs( title = paste0("Log-transformed ", input$pheno, " v. ", gene_select, " Correlation"),
+                subtitle = eq)
+  }
 
   # Render plot ---------------------------------------
   output$plot <- renderPlot({
-      if (is.null(AlleleEffect_plot())){
+      if (is.null(Correlation_plot())){
         return(NULL)
       }
-      AlleleEffect_plot()
+      Correlation_plot()
     })
 
   # Download plot --------------------------
   output$download_plot <- downloadHandler(
     filename <- function(){
-      paste0(input$gene_input, "_allele_effect.pdf")
+      paste0(input$pheno, "v", input$gene_input, "correlation.pdf")
       },
     # content must be a function with arguemtn files to write plot
     content <- function(file) {
       pdf(file, width = 11, height = 7) #open device
-        print(AlleleEffect_plot()) #print plot
+        print(Correlation_plot()) #print plot
       dev.off() # close device
     }
   )
@@ -205,7 +183,7 @@ server <- function(input, output) {
   # Output links --------------------------------
   output$gene_links <- renderText({
     # if not ready
-    if(is.null(AlleleEffect_plot())){
+    if(is.null(Correlation_plot())){
       return(NULL)
     }
 

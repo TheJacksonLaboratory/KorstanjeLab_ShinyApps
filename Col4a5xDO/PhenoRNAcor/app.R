@@ -50,7 +50,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Plotting Correlations: Phenotype v. Gene Expression v.1.1.1, powered by R/Shiny, developed by ",
+      div("Plotting Correlations: Phenotype v. Gene Expression v.1.2.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -58,7 +58,8 @@ ui <- fluidPage(
 
     # Main panel for displaying outputs ------------------
     mainPanel(
-      imageOutput("plot")
+      imageOutput("plot"),
+      htmlOutput("gene_links")
     )
   )
 )
@@ -104,12 +105,16 @@ server <- function(input, output) {
     # Update selected phenotype
     if (pheno_select == "Glomerular filtration rate"){
       pheno_select <- "C2_log"
+      value <- "(ul/min)"
     } else if (pheno_select == "ACR at 6 weeks"){
       pheno_select <- "ACR6WK_log"
+      value <- "(mg/g)"
     } else if (pheno_select == "ACR at 10 weeks"){
       pheno_select <- "ACR10WK_log"
+      value <- "(mg/g)"
     } else if (pheno_select == "ACR at 15 weeks"){
       pheno_select <- "ACR15WK_log"
+      value <- "(mg/g)"
     }
 
     #  Update selected Sex
@@ -148,8 +153,8 @@ server <- function(input, output) {
     ggplot(pheno_sub, aes(y = pheno_sub[, "tpm"], x = pheno_sub[, pheno_select])) +
           geom_smooth( method = lm) +
           geom_point() +
-          scale_x_continuous(paste0(gene_select, " TPM (Transcript per million)")) +
-          scale_y_continuous(paste0("Log-transformed ", input$pheno)) +
+          scale_x_continuous(paste(gene_select, "TPM (Transcript per million)")) +
+          scale_y_continuous(paste("Log-transformed", input$pheno, value)) +
           labs( title = paste0("Log-transformed ", input$pheno, " v. ", gene_select, " Correlation"),
                 subtitle = eq)
   }
@@ -174,6 +179,42 @@ server <- function(input, output) {
       dev.off() # close device
     }
   )
+
+  # Output links --------------------------------
+  output$gene_links <- renderText({
+    # if not ready
+    if(is.null(Correlation_plot())){
+      return(NULL)
+    }
+
+    # find gene links
+    gene <- input$gene_input
+    if ( substr(gene, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "ensembl_gene_id",
+                                      values = gene,
+      																mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "mgi_symbol",
+                                      values = gene,
+      																mart = ensembl)
+    }
+    symbol <- mart_extract$mgi_symbol[1]
+    ens_id <- mart_extract$ensembl_gene_id[1]
+    chr <- mart_extract$chromosome_name[1]
+    start <- mart_extract$start_position[1]
+    end <- mart_extract$end_position[1]
+    ensembl_link <- paste0("http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=", ens_id)
+    mgi_link <- paste0("http://www.informatics.jax.org/searchtool/Search.do?query=", ens_id)
+
+    # output links
+    paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
+          a("[Ensembl]", href = ensembl_link, target="_blank"),
+          a("[MGI]", href = mgi_link, target = "_blank"))
+  })
 }
 
 # Run the app -----------------------------------------------------------------
