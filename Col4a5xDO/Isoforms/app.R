@@ -57,10 +57,14 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Isoforms v.1.2.0, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Isoforms v.1.2.0, powered by R/Shiny, developed and maintained by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
-          ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
-          " (JAX network only).")
+          ", souce code on ",
+          a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps", target = "_blank"),
+          " (JAX network only).",
+          br(),
+          "Connect with us @",
+          a("The Korstanje Lab", href = "https://www.jax.org/research-and-faculty/research-labs/the-korstanje-lab", target = "_blank"))
     ),
 
     # Main panel for displaying outputs ------------------
