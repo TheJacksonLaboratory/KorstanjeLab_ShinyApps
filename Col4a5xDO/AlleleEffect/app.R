@@ -47,7 +47,7 @@ ui <- fluidPage(
                      label = "Download"),
       br(),
       br(),
-      div("Col4a5xDO Allele Effect v.1.1.1, powered by R/Shiny, developed by ",
+      div("Col4a5xDO Allele Effect v.1.2.0, powered by R/Shiny, developed by ",
           a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"),
           ", souce code on ", a("Github", href = "https://github.com/TheJacksonLaboratory/KorstanjeLab_ShinyApps"),
           " (JAX network only).")
@@ -55,7 +55,8 @@ ui <- fluidPage(
 
     # Main panel for displaying outputs ------------------
     mainPanel(
-      imageOutput("plot")
+      imageOutput("plot"),
+      htmlOutput("gene_links")
     )
   )
 )
@@ -109,6 +110,11 @@ server <- function(input, output) {
                             values = gene_select,
       											mart = ensembl)
     }
+    # Validate
+    validate(
+      need(nrow(mart_extract) > 0, "Gene not found in Ensembl mm10 database. Please check and try again!")
+    )
+
     # Gather chr, start, end information
     chr <- mart_extract$chromosome_name
     start <- (mart_extract$start_position / (1e6))
@@ -122,20 +128,23 @@ server <- function(input, output) {
     target <- qtl[qtl$lod == max(qtl$lod),]
 
     # Check to see if target was found
-    if (nrow(target) == 0){
-      validate(nrow(target) != 0, "Cannot query! No markers found in query gene region")
-      stop("Cannot query! No marker found in query gene region.")
-    }
+    validate(
+      need(nrow(target) != 0, "Cannot query! No markers found in query gene region")
+    )
 
     #calculate coef at target marker depending on the pheno_select variable
     if (pheno_select == "Glomerular filtration rate"){
       fit <- lm(pheno$C2_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(ul/min)"
     } else if (pheno_select == "ACR at 6 weeks"){
       fit <- lm(pheno$ACR6WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
     } else if (pheno_select == "ACR at 10 weeks"){
       fit <- lm(pheno$ACR10WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
     } else if (pheno_select == "ACR at 15 weeks"){
       fit <- lm(pheno$ACR15WK_log ~ pheno$Sex + best.genoprobs.192[,,target$marker], na.action = na.exclude)
+      values <- "(mg/g)"
     }
 
     #Female averages by strain at Snp marker
@@ -168,7 +177,7 @@ server <- function(input, output) {
     	scale_fill_discrete( labels = c("Females","Males")) +
     	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
     				x = "DO Founders",
-    				y = paste0(pheno_select, " values")) +
+    				y = paste(pheno_select, values)) +
     	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
     }
 
@@ -192,6 +201,42 @@ server <- function(input, output) {
       dev.off() # close device
     }
   )
+
+  # Output links --------------------------------
+  output$gene_links <- renderText({
+    # if not ready
+    if(is.null(AlleleEffect_plot())){
+      return(NULL)
+    }
+
+    # find gene links
+    gene <- input$gene_input
+    if ( substr(gene, 1, 7) == "ENSMUSG"){
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "ensembl_gene_id",
+                                      values = gene,
+      																mart = ensembl)
+    } else {
+      mart_extract <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "ensembl_transcript_id",
+      																"chromosome_name", "start_position", "end_position"),
+                                      filters = "mgi_symbol",
+                                      values = gene,
+      																mart = ensembl)
+    }
+    symbol <- mart_extract$mgi_symbol[1]
+    ens_id <- mart_extract$ensembl_gene_id[1]
+    chr <- mart_extract$chromosome_name[1]
+    start <- mart_extract$start_position[1]
+    end <- mart_extract$end_position[1]
+    ensembl_link <- paste0("http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=", ens_id)
+    mgi_link <- paste0("http://www.informatics.jax.org/searchtool/Search.do?query=", ens_id)
+
+    # output links
+    paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
+          a("[Ensembl]", href = ensembl_link, target="_blank"),
+          a("[MGI]", href = mgi_link, target = "_blank"))
+  })
 }
 
 # Run the app -----------------------------------------------------------------
