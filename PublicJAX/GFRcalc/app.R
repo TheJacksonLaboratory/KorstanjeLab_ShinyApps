@@ -3,7 +3,7 @@ library(shiny)
 library(readxl)
 library(ggplot2)
 
-source("/home/ytakemon/ShinyApps/GFRcalc/helpers.R")
+source("/opt/KorstanjeLab/GFRcalc/helpers.R")
 options(stringsAsFactors = FALSE)
 max_plots <- 16
 

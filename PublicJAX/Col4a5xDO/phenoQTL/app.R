@@ -1,12 +1,12 @@
 library(shiny)
 # All eQTL maps are located in helix @ /home/ytakemon/ShinyApps/Col4a5xDO/phenoQTL/www/
-setwd("/opt/Col4a5xDO/phenoQTL/www/")
+setwd("/opt/KorstanjeLab/Col4a5xDO/phenoQTL/www/")
 
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/Col4a5xDO/")," – Phenotype QTL"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/KorstanjeLab/Col4a5xDO/")," – Phenotype QTL"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(

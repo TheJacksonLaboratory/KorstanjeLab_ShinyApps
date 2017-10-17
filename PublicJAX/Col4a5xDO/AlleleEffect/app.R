@@ -5,7 +5,7 @@ library(DOQTL)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-setwd("/opt/Col4a5xDO/RefData/")
+setwd("/opt/KorstanjeLab/Col4a5xDO/RefData/")
 load("best.genoprobs.192.Rdata")
 load("GM_snps.Rdata")
 pheno <- read.delim("Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
@@ -18,7 +18,7 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/Col4a5xDO/")," – Allele Effect"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/KorstanjeLab/Col4a5xDO")," – Allele Effect"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
