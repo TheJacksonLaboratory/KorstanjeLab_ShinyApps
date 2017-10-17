@@ -16,6 +16,11 @@ ui <- pageWithSidebar(
   # Sidebar with a slider input for number of observations
   sidebarPanel(
     fileInput("GFRfile", "Input file:"),
+    div("Please strictly follow the template provided in this example:"),
+    downloadButton("download_tempalate",
+                   label = "Download Example Input File"),
+    br(),
+    br(),
     sliderInput("dilution","Dilution:", min=50, max=200, value=100),
     helpText("Input file should a XLSX file with 4-5 columns and no header:
               'Animal' (optional), 'Time', 'F1',
@@ -31,7 +36,6 @@ ui <- pageWithSidebar(
     checkboxInput("Sigma.C2", "Square root of the error variance (Sigma.C2)", value=TRUE),
     checkboxInput("nNA", "Number of missing observations (nNA)", value=TRUE),
   #  sliderInput("trhold","Outlier threshold:", min=1, max=10, value=5),
-
     br(),
     div("GFRcalc 0.9.5, powered by R/Shiny, developed by ",
         a("Petr Simecek", href = "https://github.com/simecek", target = "_blank"),
@@ -42,7 +46,6 @@ ui <- pageWithSidebar(
         br(),
         "Connect with us @",
         a("The Korstanje Lab", href = "https://www.jax.org/research-and-faculty/research-labs/the-korstanje-lab", target = "_blank"))
-
   ),
 
   mainPanel(
@@ -52,7 +55,7 @@ ui <- pageWithSidebar(
   )
  )
 # Server ----------------------------------------------------------------------
-server <- function(input, output) {
+server <- function(input, output){
 
   # read data file
   file.upload <- reactive({
@@ -62,7 +65,9 @@ server <- function(input, output) {
       file.rename(inFile$datapath, paste(inFile$datapath, ext, sep=".")) # dirty hack, see issue 85
 
       output <- read_excel(paste(inFile$datapath, ext, sep="."), sheet=2, col_names = FALSE)
+      # output <- read_excel(paste(inFile, sep = "."), sheet=2, col_names = FALSE)
       output <- output[!is.na(output[,1]),] # remove NA rows
+      output <- as.data.frame(output)
       if (!is.character(output[,1])) { # if animal IDs missing, add them
         animalID <- rep(LETTERS, each=length(unique(output[,1])))[1:nrow(output)]
         output <- cbind(animalID, output)
@@ -72,7 +77,10 @@ server <- function(input, output) {
 
       # adding information about animals - should be on sheet 3
       animal.table <- read_excel(paste(inFile$datapath, ext, sep="."), sheet=3, col_names = FALSE)[2:4,-1]
-      attr(output, "animals") <- t(animal.table)
+      # animal.table <- read_excel(paste(inFile, sep = "."), sheet=3, col_names = FALSE)[2:4,-1]
+      animal.table <- t(animal.table)
+      attr(output, "animals") <- animal.table
+
       output
     } else {
       NULL
@@ -166,7 +174,7 @@ server <- function(input, output) {
     }
   })
 
-  for (i in 1:max_plots) {
+  for (i in 1:max_plots){
     # Need local so that each item gets its own number. Without it, the value
     # of i in the renderPlot() will be the same across all instances, because
     # of when the expression is evaluated.
@@ -176,6 +184,20 @@ server <- function(input, output) {
       output[[plotname]] <- renderPlot({make.plot(file.upload(), my_i)})
     })
   }
+
+  # Download template ---------------------------------------
+  # https://stackoverflow.com/questions/39449544/shiny-download-an-excel-file
+  output$download_tempalate <- downloadHandler(
+    filename = function(){
+      paste("GFR_sample_file.xlsx")
+    },
+    content = function(file){
+      myfile <-  "/opt/KorstanjeLab/GFRcalc/GFR_template.xlsx"
+      file.copy(myfile, file)
+    }
+  )
+
 }
+
 # Run the app -----------------------------------------------------------------
 shinyApp(ui = ui, server = server)
