@@ -4,9 +4,10 @@ library(ggplot2)
 library(reshape2)
 
 # Load essential data ---------------------------------------------------------
-load("/opt/KorstanjeLab/Col4a5xDO/RefData/Gene_allele.Rdata")
+setwd("/opt/KorstanjeLab/Col4a5xDO/RefData/")
+load("./Gene_allele.Rdata")
 Gene_allele <- as.data.frame(Gene_allele)
-load("/opt/KorstanjeLab/Col4a5xDO/RefData/All_transcript_tpm.Rdata")
+load("./All_transcript_tpm.Rdata")
 # Get mm10 data
 ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
                       dataset = "mmusculus_gene_ensembl",

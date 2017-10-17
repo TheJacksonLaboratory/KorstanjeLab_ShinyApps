@@ -33,10 +33,12 @@ ui <- pageWithSidebar(
   #  sliderInput("trhold","Outlier threshold:", min=1, max=10, value=5),
 
     br(),
-    div("GFRcalc 0.9.5, powered by R/Shiny, developed by Petr Simecek and currently maintained by ",
+    div("GFRcalc 0.9.5, powered by R/Shiny, developed by ",
+        a("Petr Simecek", href = "https://github.com/simecek", target = "_blank"),
+        " and currently maintained by ",
         a("Yuka Takemon", href="mailto:yuka.takemon@jax.org?subject=KorstanejeLab shiny page"), ". ",
         "Source code on ",
-        a("Github", href="https://github.com/simecek/GFRcalc"),".",
+        a("Github", href="https://github.com/simecek/GFRcalc", target = "_blank"),".",
         br(),
         "Connect with us @",
         a("The Korstanje Lab", href = "https://www.jax.org/research-and-faculty/research-labs/the-korstanje-lab", target = "_blank"))
