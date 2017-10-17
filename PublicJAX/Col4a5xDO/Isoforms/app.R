@@ -228,7 +228,8 @@ server <- function(input, output) {
     # output links
     paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
           a("[Ensembl]", href = ensembl_link, target="_blank"),
-          a("[MGI]", href = mgi_link, target = "_blank"))
+          a("[MGI]", href = mgi_link, target = "_blank"),br(),
+          a("Diversity Outbred founder strain guide", href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4602074/figure/Fig1/", target = "_blank"))
   })
 
 }

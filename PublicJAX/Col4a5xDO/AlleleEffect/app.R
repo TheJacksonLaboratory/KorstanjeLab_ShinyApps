@@ -179,7 +179,8 @@ server <- function(input, output) {
     ggplot(ggdata, aes( x = Founder, y = Value, fill = Sex)) +
     	geom_bar( stat = "identity", position = "dodge") +
     	scale_fill_discrete( labels = c("Females","Males")) +
-    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ") for ",pheno_select, " by founder strains"),
+    	labs(title = paste0("Col4a5xDO allele effect at ", gene_select ," (Chr", target$chr, " ", target$marker, " position: ", target$pos, ")"),
+            subtitle = paste0(pheno_select, " by founder strains"),
     				x = "DO Founders",
     				y = paste(pheno_select, values)) +
     	theme( legend.position = "right", plot.title = element_text(hjust = 0.5))
@@ -239,7 +240,8 @@ server <- function(input, output) {
     # output links
     paste(p(symbol, "is located on chromosome", chr, ":", start, "-", end),
           a("[Ensembl]", href = ensembl_link, target="_blank"),
-          a("[MGI]", href = mgi_link, target = "_blank"))
+          a("[MGI]", href = mgi_link, target = "_blank"),br(),
+          a("Diversity Outbred founder strain guide", href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4602074/figure/Fig1/", target = "_blank"))
   })
 }
 
