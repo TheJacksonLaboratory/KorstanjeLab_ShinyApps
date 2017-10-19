@@ -15,7 +15,7 @@ ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/KorstanjeLab/Col4a5xDO/")," – Plotting Correlations: Phenotype v. Gene Expression"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "/KorstanjeLab/Col4a5xDO/")," – Plotting Correlations: Phenotype v. Gene Expression"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(

@@ -7,7 +7,7 @@ setwd("/opt/KorstanjeLab/Col4a5xDO/eQTL/www/")
 ui <- fluidPage(
 
   # Title
-  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "http://ctronshiny01:3838/KorstanjeLab/Col4a5xDO")," – eQTL"),
+  tags$h2(tags$a("Col4a5 x Diversity Outbred", href = "/KorstanjeLab/Col4a5xDO")," – eQTL"),
 
   # Sidebar layout with input and output definitions ------------------
   sidebarLayout(
