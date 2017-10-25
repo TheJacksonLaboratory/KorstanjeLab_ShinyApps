@@ -65,7 +65,8 @@ ui <- fluidPage(
           " (JAX network only).",
           br(),
           "Connect with us @",
-          a("The Korstanje Lab", href = "https://www.jax.org/research-and-faculty/research-labs/the-korstanje-lab", target = "_blank"))
+          a("The Korstanje Lab", href = "https://www.jax.org/research-and-faculty/research-labs/the-korstanje-lab", target = "_blank")),
+          div(a(img(src = "JAXlogo_trans.gif", height= 98, width= 186), href="https://www.jax.org"))
     ),
 
     # Main panel for displaying outputs ------------------
