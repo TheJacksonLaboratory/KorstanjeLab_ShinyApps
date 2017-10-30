@@ -16,15 +16,12 @@ ui <- pageWithSidebar(
   # Sidebar with a slider input for number of observations
   sidebarPanel(
     fileInput("GFRfile", "Input file:"),
-    div("Please strictly follow the template provided in this example:"),
+    helpText("Please follow the template provided in this example:"),
     downloadButton("download_tempalate",
                    label = "Download Example Input File"),
     br(),
     br(),
     sliderInput("dilution","Dilution:", min=50, max=200, value=100),
-    helpText("Input file should a XLSX file with 4-5 columns and no header:
-              'Animal' (optional), 'Time', 'F1',
-             'F2' and 'F3' (other columns will be ignored)."),
     checkboxInput("Animal", "Animal (A-Z)", value=TRUE),
     checkboxInput("MouseId", "Mouse ID", value=TRUE),
     checkboxInput("Weight", "Weight", value=TRUE),
