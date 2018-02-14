@@ -1,5 +1,5 @@
 # KorstanjeLab_ShinyApps
-Homepage link: http://ctronshiny01:3838/Col4a5xDO/ (Internal access only)
+Homepage link: http://ctronshiny01:3838/ (Internal access only)
+Server logs: ```/var/log/shiny-server```
 
 External link: https://korstanjelab.jax.org (External access)
-
