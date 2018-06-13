@@ -11,9 +11,8 @@ load("GM_snps.Rdata")
 pheno <- read.delim("Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 
 # Get mm10 data
-ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
-                      dataset = "mmusculus_gene_ensembl",
-                      verbose = TRUE)
+ensembl <- readRDS("./ensembl.rds")
+
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 

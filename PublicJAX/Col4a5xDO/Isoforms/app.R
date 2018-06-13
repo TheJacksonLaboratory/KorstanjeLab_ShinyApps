@@ -9,9 +9,8 @@ load("./Gene_allele.Rdata")
 Gene_allele <- as.data.frame(Gene_allele)
 load("./All_transcript_tpm.Rdata")
 # Get mm10 data
-ensembl <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL",
-                      dataset = "mmusculus_gene_ensembl",
-                      verbose = TRUE)
+ensembl <- readRDS("./ensembl.rds")
+
 # User Interface --------------------------------------------------------------
 ui <- fluidPage(
 
