@@ -5,7 +5,7 @@ library(ggplot2)
 
 # Load essential data ----------------------------------------------------------
 setwd("/opt/KorstanjeLab/Col4a5xDO/RefData/")
-load("./RNA_seq_tpm.Rdata")
+load("./Col4a5xDO_192data_YT.Rdata")
 pheno <- read.delim("./Minimal_shiny_pheno.txt", sep = "\t", header = TRUE)
 ensembl <- readRDS("./ensembl.rds")
 
@@ -130,7 +130,7 @@ server <- function(input, output) {
     }
 
     # Extract selected gene TPM count
-    TPM <- RNA_seq[,mart_extract$ensembl_gene_id]
+    TPM <- mRNAexpr[,mart_extract$ensembl_gene_id]
     # Check to see if TPM was found
     if (length(TPM) == 0){
       validate(nrow(TPM) != 0, "Cannot query! Query gene not found in RNA-seq data.")
