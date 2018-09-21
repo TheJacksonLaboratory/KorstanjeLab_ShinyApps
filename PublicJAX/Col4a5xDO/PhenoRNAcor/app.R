@@ -153,7 +153,7 @@ server <- function(input, output) {
     eq <- paste("y = ", slope,"x ","+ ", intcp, ", ", "R^2 =", r2, ", ", " pval = ", pval, sep = "")
 
     # Plot
-    ggplot(pheno_sub, aes(y = pheno_sub[, "tpm"], x = pheno_sub[, pheno_select])) +
+    ggplot(pheno_sub, aes(x = pheno_sub[, "tpm"], y = pheno_sub[, pheno_select])) +
           geom_smooth( method = lm) +
           geom_point() +
           scale_x_continuous(paste(gene_select, "TPM (Transcript per million)")) +
